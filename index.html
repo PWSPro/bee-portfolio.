@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEE | Pro Developer</title>
+    
+    <!-- Google Fonts: Outfit for headings, Inter for body, Fira Code for code snippets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        bee: {
+                            light: '#fde68a',  /* Soft gold */
+                            main: '#f59e0b',   /* Vibrant amber */
+                            dark: '#b45309',   /* Deep honey */
+                            accent: '#fbbf24', /* Bright yellow/amber */
+                        },
+                        dark: {
+                            900: '#0a0a0a', /* Pitch black */
+                            800: '#121212', /* Slightly lighter */
+                            700: '#1f1f1f', /* Card background */
+                        }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 8s linear infinite',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { boxShadow: '0 0 10px rgba(245, 158, 11, 0.2)' },
+                            '100%': { boxShadow: '0 0 30px rgba(245, 158, 11, 0.6)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base styles */
+        body {
+            background-color: #0a0a0a;
+            color: #f8fafc;
+            overflow-x: hidden;
+            padding-bottom: 100px;
+            cursor: none; /* Hide default cursor for custom one */
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
+
+        /* Custom Cursor */
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #f59e0b;
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            box-shadow: 0 0 10px #f59e0b;
+        }
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 50%;
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, border-color 0.2s, transform 0.1s ease-out;
+        }
+        .cursor-hover .cursor-dot {
+            width: 0; height: 0; opacity: 0;
+        }
+        .cursor-hover .cursor-outline {
+            width: 60px; height: 60px;
+            border-color: #f59e0b;
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0a0a0a; z-index: 10000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .loader-hexagon {
+            width: 60px; height: 60px;
+            border: 2px solid #f59e0b;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: spin-slow 3s linear infinite;
+            box-shadow: 0 0 20px #f59e0b;
+            margin-bottom: 20px;
+        }
+        .loader-text {
+            font-family: 'Fira Code', monospace;
+            color: #f59e0b; font-size: 14px; letter-spacing: 2px;
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: rgba(31, 31, 31, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 158, 11, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        /* Background Canvas */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; pointer-events: none;
+        }
+
+        /* Hexagon Shapes */
+        .clip-hex { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+        
+        .hex-card {
+            position: relative; width: 100px; height: 110px;
+            margin: 10px; display: flex; justify-content: center; align-items: center;
+            transition: transform 0.3s ease;
+        }
+        .hex-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, #f59e0b, #b45309);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            padding: 2px; z-index: -1; transition: all 0.3s ease;
+        }
+        .hex-inner {
+            width: calc(100% - 4px); height: calc(100% - 4px);
+            background: #121212;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            gap: 8px; transition: background 0.3s ease;
+        }
+        .hex-card:hover { transform: translateY(-10px) scale(1.05); }
+        .hex-card:hover .hex-inner { background: rgba(245, 158, 11, 0.1); }
+        .hex-card:hover::before { filter: drop-shadow(0 0 15px #f59e0b); }
+
+        /* Section Transitions */
+        .section-content {
+            display: none; opacity: 0; transform: scale(0.95) translateY(20px);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .section-content.active {
+            display: block; opacity: 1; transform: scale(1) translateY(0);
+        }
+
+        /* Text gradient */
+        .text-gradient {
+            background: linear-gradient(to right, #fde68a, #f59e0b, #b45309);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientMove 3s linear infinite;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* Project Cards */
+        .project-card {
+            position: relative; overflow: hidden; border-radius: 1rem;
+        }
+        .project-card img {
+            transition: transform 0.5s ease;
+        }
+        .project-card:hover img {
+            transform: scale(1.1);
+        }
+        .project-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(10,10,10,0.95), rgba(10,10,10,0.2));
+            display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 1.5rem; opacity: 0.9; transition: opacity 0.3s ease;
+        }
+        .project-card:hover .project-overlay { opacity: 1; }
+
+        /* Nav active state */
+        .nav-btn { position: relative; color: #6b7280; }
+        .nav-btn.active { color: #f59e0b; }
+        .nav-btn.active::after {
+            content: ''; position: absolute; bottom: -8px; left: 50%;
+            transform: translateX(-50%); width: 24px; height: 3px;
+            background-color: #f59e0b; border-radius: 2px;
+            box-shadow: 0 0 8px #f59e0b;
+            transition: all 0.3s ease;
+        }
+
+        /* Blinking cursor for typing */
+        .typing-cursor {
+            display: inline-block; width: 3px; background-color: #f59e0b;
+            margin-left: 4px; animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+
+<body class="selection:bg-bee-main selection:text-dark-900 font-sans antialiased">
+
+    <!-- Custom Cursor Elements -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader-hexagon"></div>
+        <div class="loader-text">BEE_OS BOOTING<span class="typing-cursor"></span></div>
+    </div>
+
+    <!-- Interactive Background Canvas -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Ambient Glow Orbs -->
+    <div class="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-bee-main/10 blur-[120px] z-[-1] pointer-events-none"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-bee-dark/10 blur-[100px] z-[-1] pointer-events-none"></div>
+
+    <main class="max-w-5xl mx-auto px-6 pt-12 pb-28 md:pt-20 min-h-screen flex flex-col relative z-10">
+
+        <!-- ========================================== -->
+        <!-- HOME SECTION -->
+        <!-- ========================================== -->
+        <section id="sec-home" class="section-content active my-auto">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-12">
+                
+                <div class="flex-1 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-bee-main text-sm font-mono tracking-wide mb-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        SYSTEM ONLINE
+                    </div>
+                    
+                    <h1 class="font-heading text-6xl md:text-8xl font-extrabold leading-tight tracking-tight text-white">
+                        I'm <br>
+                        <span class="text-gradient">BEE</span>
+                    </h1>
+                    
+                    <!-- Typing Effect Container -->
+                    <div class="h-8 md:h-10">
+                        <p class="text-xl md:text-2xl font-mono text-gray-300">
+                            > <span id="typing-text"></span><span class="typing-cursor"></span>
+                        </p>
+                    </div>
+
+                    <p class="text-gray-400 text-lg max-w-lg mx-auto lg:mx-0 leading-relaxed mt-4">
+                        A 16-year-old developer crafting premium digital experiences. I turn complex problems into elegant, functional realities.
+                    </p>
+
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-5 pt-8">
+                        <button class="nav-trigger group relative px-8 py-3 bg-bee-main text-dark-900 font-bold rounded-lg overflow-hidden hover:scale-105 transition-transform" data-target="contact">
+                            <span class="relative z-10 flex items-center gap-2">
+                                <i class="fa-solid fa-bolt"></i> Initiate Contact
+                            </span>
+                            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                        </button>
+                        
+                        <button class="nav-trigger group px-8 py-3 glass text-white font-medium rounded-lg hover:bg-white/5 transition-all flex items-center gap-2" data-target="projects">
+                            <i class="fa-solid fa-folder-open text-bee-main"></i> View Works
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3D Hero Graphic -->
+                <div class="flex-1 flex justify-center w-full max-w-md relative">
+                    <div class="relative w-72 h-72 md:w-96 md:h-96 animate-pulse-glow rounded-full">
+                        <!-- Decorative outer ring -->
+                        <div class="absolute inset-0 border border-bee-main/20 rounded-full animate-[spin_10s_linear_infinite] border-dashed"></div>
+                        <div class="absolute inset-4 border border-bee-main/40 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                        
+                        <!-- Core Hexagon -->
+                        <div class="absolute inset-10 bg-dark-800 clip-hex flex items-center justify-center border border-bee-main/50 backdrop-blur-sm relative group overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-b from-bee-main/20 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <i class="fa-brands fa-forumbee text-[8rem] text-bee-main group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 relative z-10 drop-shadow-[0_0_15px_rgba(245,158,11,0.8)]"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- ABOUT SECTION -->
+        <!-- ========================================== -->
+        <section id="sec-about" class="section-content mt-8">
+            <div class="flex items-center gap-4 mb-10">
+                <div class="w-12 h-12 rounded-xl bg-bee-main/10 flex items-center justify-center border border-bee-main/30 text-bee-main text-xl">
+                    <i class="fa-solid fa-fingerprint"></i>
+                </div>
+                <h2 class="font-heading text-4xl md:text-5xl font-bold">Identity</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Text Content -->
+                <div class="glass rounded-2xl p-8 relative overflow-hidden flex flex-col justify-center">
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-bee-main/5 rounded-full blur-3xl"></div>
+                    <h3 class="text-2xl font-heading font-bold text-white mb-4">Behind the Code</h3>
+                    <div class="space-y-4 text-gray-400 leading-relaxed text-lg relative z-10">
+                        <p>
+                            Welcome to the mainframe. I am <strong class="text-bee-main font-mono">BEE</strong>. I started coding because I was fascinated by how a few lines of logic could bend machines to my will.
+                        </p>
+                        <p>
+                            At 16, my playground isn't just games; it's servers, scripts, and scalable architecture. I don't just write code, I engineer solutions that are clean, fast, and secure.
+                        </p>
+                        <p>
+                            When I'm offline, I'm analyzing systems, learning the latest tech stacks, and plotting my next big project.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Code Mockup -->
+                <div class="glass rounded-2xl overflow-hidden border border-gray-800 flex flex-col">
+                    <!-- Mac style header -->
+                    <div class="bg-dark-900/80 px-4 py-3 flex items-center gap-2 border-b border-gray-800">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span class="ml-2 text-xs font-mono text-gray-500">bee_profile.json</span>
+                    </div>
+                    <!-- Code body -->
+                    <div class="p-6 font-mono text-sm overflow-x-auto">
+                        <span class="text-pink-500">const</span> <span class="text-blue-400">developer</span> <span class="text-white">=</span> <span class="text-yellow-300">{</span><br>
+                        &nbsp;&nbsp;<span class="text-green-300">"name"</span><span class="text-white">:</span> <span class="text-yellow-200">"BEE"</span><span class="text-white">,</span><br>
+                        &nbsp;&nbsp;<span class="text-green-300">"age"</span><span class="text-white">:</span> <span class="text-purple-400">16</span><span class="text-white">,</span><br>
+                        &nbsp;&nbsp;<span class="text-green-300">"role"</span><span class="text-white">:</span> <span class="text-yellow-200">"Full-Stack Dev"</span><span class="text-white">,</span><br>
+                        &nbsp;&nbsp;<span class="text-green-300">"status"</span><span class="text-white">:</span> <span class="text-yellow-200">"Building the future"</span><span class="text-white">,</span><br>
+                        &nbsp;&nbsp;<span class="text-green-300">"skills"</span><span class="text-white">:</span> <span class="text-blue-300">[</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-yellow-200">"Web Dev"</span><span class="text-white">,</span> <span class="text-yellow-200">"Automation"</span><span class="text-white">,</span> <span class="text-yellow-200">"APIs"</span><br>
+                        &nbsp;&nbsp;<span class="text-blue-300">]</span><span class="text-white">,</span><br>
+                        &nbsp;&nbsp;<span class="text-blue-400">execute</span><span class="text-white">:</span> <span class="text-pink-500">function</span><span class="text-yellow-300">()</span> <span class="text-blue-300">{</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-pink-500">return</span> <span class="text-yellow-200">"Perfection."</span><span class="text-white">;</span><br>
+                        &nbsp;&nbsp;<span class="text-blue-300">}</span><br>
+                        <span class="text-yellow-300">}</span><span class="text-white">;</span><br><br>
+                        <span class="text-gray-500">// Run program</span><br>
+                        <span class="text-blue-400">developer</span><span class="text-white">.</span><span class="text-yellow-100">execute</span><span class="text-yellow-300">()</span><span class="text-white">;</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SKILLS SECTION -->
+        <!-- ========================================== -->
+        <section id="sec-skills" class="section-content mt-8">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="w-12 h-12 rounded-xl bg-bee-main/10 flex items-center justify-center border border-bee-main/30 text-bee-main text-xl">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h2 class="font-heading text-4xl md:text-5xl font-bold">Tech Stack</h2>
+            </div>
+            <p class="text-gray-400 mb-12 ml-16">The core technologies powering my builds.</p>
+
+            <div class="flex flex-wrap justify-center gap-4 max-w-4xl mx-auto">
+                <!-- Skill 1 -->
+                <div class="hex-card">
+                    <div class="hex-inner">
+                        <i class="fa-brands fa-html5 text-3xl text-gray-400"></i>
+                        <span class="text-xs font-mono text-gray-300">Frontend</span>
+                    </div>
+                </div>
+                <!-- Skill 2 -->
+                <div class="hex-card" style="margin-top: 40px;">
+                    <div class="hex-inner">
+                        <i class="fa-brands fa-js text-3xl text-yellow-400/80"></i>
+                        <span class="text-xs font-mono text-gray-300">JS / TS</span>
+                    </div>
+                </div>
+                <!-- Skill 3 -->
+                <div class="hex-card">
+                    <div class="hex-inner">
+                        <i class="fa-brands fa-python text-3xl text-blue-400/80"></i>
+                        <span class="text-xs font-mono text-gray-300">Python</span>
+                    </div>
+                </div>
+                <!-- Skill 4 -->
+                <div class="hex-card" style="margin-top: 40px;">
+                    <div class="hex-inner">
+                        <i class="fa-brands fa-node-js text-3xl text-green-500/80"></i>
+                        <span class="text-xs font-mono text-gray-300">Node.js</span>
+                    </div>
+                </div>
+                <!-- Skill 5 -->
+                <div class="hex-card">
+                    <div class="hex-inner">
+                        <i class="fa-solid fa-wind text-3xl text-cyan-400/80"></i>
+                        <span class="text-xs font-mono text-gray-300">Tailwind</span>
+                    </div>
+                </div>
+                <!-- Skill 6 -->
+                <div class="hex-card" style="margin-top: 40px;">
+                    <div class="hex-inner">
+                        <i class="fa-solid fa-database text-3xl text-gray-400"></i>
+                        <span class="text-xs font-mono text-gray-300">SQL/NoSQL</span>
+                    </div>
+                </div>
+                <!-- Skill 7 -->
+                <div class="hex-card">
+                    <div class="hex-inner">
+                        <i class="fa-brands fa-git-alt text-3xl text-orange-500/80"></i>
+                        <span class="text-xs font-mono text-gray-300">Git</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 pt-8 border-t border-gray-800">
+                <div class="text-center">
+                    <p class="text-3xl font-heading font-bold text-bee-main mb-1">3+</p>
+                    <p class="text-xs text-gray-500 font-mono uppercase">Years Coding</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-heading font-bold text-bee-main mb-1">50+</p>
+                    <p class="text-xs text-gray-500 font-mono uppercase">Projects Built</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-heading font-bold text-bee-main mb-1">100%</p>
+                    <p class="text-xs text-gray-500 font-mono uppercase">Dedication</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-3xl font-heading font-bold text-bee-main mb-1">∞</p>
+                    <p class="text-xs text-gray-500 font-mono uppercase">Cups of Coffee</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- PROJECTS SECTION (NEW) -->
+        <!-- ========================================== -->
+        <section id="sec-projects" class="section-content mt-8">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="w-12 h-12 rounded-xl bg-bee-main/10 flex items-center justify-center border border-bee-main/30 text-bee-main text-xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h2 class="font-heading text-4xl md:text-5xl font-bold">Showcase</h2>
+            </div>
+            <p class="text-gray-400 mb-10 ml-16">Selected works from my archive.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Project 1 -->
+                <div class="project-card glass h-64 border border-gray-800 group cursor-pointer">
+                    <!-- Placeholder Image (Dark/Abstract) -->
+                    <img src="https://placehold.co/600x400/121212/f59e0b?text=Nexus+Bot" alt="Project" class="w-full h-full object-cover">
+                    <div class="project-overlay">
+                        <div class="flex gap-2 mb-2">
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">Node.js</span>
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">Discord.js</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-1">Nexus Multi-Tool Bot</h3>
+                        <p class="text-sm text-gray-300 line-clamp-2">Advanced Discord bot featuring moderation, economy, and custom API integrations.</p>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="project-card glass h-64 border border-gray-800 group cursor-pointer">
+                    <img src="https://placehold.co/600x400/121212/f59e0b?text=Aura+UI" alt="Project" class="w-full h-full object-cover">
+                    <div class="project-overlay">
+                        <div class="flex gap-2 mb-2">
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">React</span>
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">Tailwind</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-1">Aura Admin Dashboard</h3>
+                        <p class="text-sm text-gray-300 line-clamp-2">A sleek, dark-themed admin dashboard interface with real-time data visualization.</p>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="project-card glass h-64 border border-gray-800 group cursor-pointer">
+                    <img src="https://placehold.co/600x400/121212/f59e0b?text=API+Scraper" alt="Project" class="w-full h-full object-cover">
+                    <div class="project-overlay">
+                        <div class="flex gap-2 mb-2">
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">Python</span>
+                            <span class="text-[10px] bg-bee-main/20 text-bee-main px-2 py-1 rounded font-mono">BS4</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-1">Automated Data Scraper</h3>
+                        <p class="text-sm text-gray-300 line-clamp-2">High-speed web scraping tool built to extract and format large datasets efficiently.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 text-center">
+                <p class="text-sm text-gray-500 font-mono">More projects available upon request.</p>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SERVICES SECTION -->
+        <!-- ========================================== -->
+        <section id="sec-services" class="section-content mt-8">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="w-12 h-12 rounded-xl bg-bee-main/10 flex items-center justify-center border border-bee-main/30 text-bee-main text-xl">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <h2 class="font-heading text-4xl md:text-5xl font-bold">Capabilities</h2>
+            </div>
+            <p class="text-gray-400 mb-10 ml-16">What I can engineer for you.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Service 1 -->
+                <div class="glass p-8 rounded-2xl border-t border-t-gray-700 hover:border-t-bee-main transition-colors group">
+                    <i class="fa-solid fa-globe text-4xl text-gray-600 group-hover:text-bee-main transition-colors mb-6"></i>
+                    <h3 class="text-2xl font-heading font-bold text-white mb-3">Web Architecture</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        End-to-end web development. From stunning landing pages to complex, data-driven web applications. Built for speed, responsiveness, and aesthetics.
+                    </p>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="glass p-8 rounded-2xl border-t border-t-gray-700 hover:border-t-bee-main transition-colors group">
+                    <i class="fa-brands fa-discord text-4xl text-gray-600 group-hover:text-bee-main transition-colors mb-6"></i>
+                    <h3 class="text-2xl font-heading font-bold text-white mb-3">Bot Engineering</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Custom Discord bots and automation scripts. Need to manage a community, integrate APIs, or automate repetitive tasks? I build the engine for it.
+                    </p>
+                </div>
+                
+                <!-- Service 3 -->
+                <div class="glass p-8 rounded-2xl border-t border-t-gray-700 hover:border-t-bee-main transition-colors group md:col-span-2 lg:col-span-1 lg:col-start-1 lg:col-end-3 mx-auto max-w-2xl w-full text-center">
+                    <i class="fa-solid fa-terminal text-4xl text-gray-600 group-hover:text-bee-main transition-colors mb-6"></i>
+                    <h3 class="text-2xl font-heading font-bold text-white mb-3">Custom Solutions</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed max-w-lg mx-auto">
+                        Backend logic, API integrations, and tailored software solutions. If you have a complex problem, I can design the protocol to solve it.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- CONTACT SECTION -->
+        <!-- ========================================== -->
+        <section id="sec-contact" class="section-content mt-8">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="w-12 h-12 rounded-xl bg-bee-main/10 flex items-center justify-center border border-bee-main/30 text-bee-main text-xl">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </div>
+                <h2 class="font-heading text-4xl md:text-5xl font-bold">Comms Link</h2>
+            </div>
+            <p class="text-gray-400 mb-10 ml-16">Establish a secure connection.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                
+                <!-- Telegram -->
+                <a href="https://t.me/INTELLIGENCE_BEE1" target="_blank" class="glass p-8 rounded-2xl flex flex-col items-center justify-center gap-4 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(245,158,11,0.15)] transition-all group relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#0088cc]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="fa-brands fa-telegram text-5xl text-gray-600 group-hover:text-[#0088cc] transition-colors relative z-10"></i>
+                    <div class="text-center relative z-10">
+                        <p class="text-sm text-gray-500 font-mono mb-1">PRIMARY COMMS</p>
+                        <p class="text-xl font-heading font-bold text-white tracking-wide">@INTELLIGENCE_BEE1</p>
+                    </div>
+                </a>
+
+                <!-- Email -->
+                <a href="mailto:www.soephyowai@gmail.com" class="glass p-8 rounded-2xl flex flex-col items-center justify-center gap-4 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(245,158,11,0.15)] transition-all group relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#ea4335]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <i class="fa-solid fa-envelope-open-text text-5xl text-gray-600 group-hover:text-[#ea4335] transition-colors relative z-10"></i>
+                    <div class="text-center relative z-10">
+                        <p class="text-sm text-gray-500 font-mono mb-1">DIRECT MAIL</p>
+                        <p class="text-[15px] font-heading font-bold text-white tracking-wide break-all">www.soephyowai@gmail.com</p>
+                    </div>
+                </a>
+
+            </div>
+
+            <!-- Terminal-style footer note -->
+            <div class="mt-20 max-w-lg mx-auto bg-dark-900 border border-gray-800 rounded-lg p-4 font-mono text-xs text-gray-500 shadow-inner">
+                <p><span class="text-green-500">bee@server:~$</span> status --check</p>
+                <p class="text-gray-400 mt-1">[OK] Systems nominal. Ready for new contracts.</p>
+                <p class="mt-4 opacity-50">© 2026 BEE. END OF LINE.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Bottom Navigation -->
+    <nav class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-[95%] max-w-lg">
+        <div class="glass-nav rounded-2xl px-2 py-2 flex justify-between items-center shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+            
+            <button class="nav-btn nav-trigger active flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="home">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">HOME</span>
+            </button>
+
+            <button class="nav-btn nav-trigger flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="about">
+                <i class="fa-solid fa-fingerprint text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">ABOUT</span>
+            </button>
+
+            <button class="nav-btn nav-trigger flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="skills">
+                <i class="fa-solid fa-microchip text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">STACK</span>
+            </button>
+
+            <button class="nav-btn nav-trigger flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="projects">
+                <i class="fa-solid fa-folder-open text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">WORKS</span>
+            </button>
+
+            <button class="nav-btn nav-trigger flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="services">
+                <i class="fa-solid fa-cube text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">SVC</span>
+            </button>
+
+            <button class="nav-btn nav-trigger flex-1 py-3 flex flex-col items-center gap-1 rounded-xl hover:bg-white/5 transition-colors" data-target="contact">
+                <i class="fa-solid fa-satellite-dish text-lg"></i>
+                <span class="text-[10px] font-mono tracking-wide hidden md:block mt-1">COMMS</span>
+            </button>
+
+        </div>
+    </nav>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. Preloader Logic ---
+            setTimeout(() => {
+                const preloader = document.getElementById('preloader');
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.visibility = 'hidden';
+                }, 500);
+            }, 1500); // Hide after 1.5s
+
+            // --- 2. Custom Cursor Logic ---
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorOutline = document.querySelector('.cursor-outline');
+            
+            window.addEventListener('mousemove', (e) => {
+                const posX = e.clientX;
+                const posY = e.clientY;
+                
+                cursorDot.style.left = `${posX}px`;
+                cursorDot.style.top = `${posY}px`;
+                
+                // Add slight delay to outline for cool effect
+                cursorOutline.animate({
+                    left: `${posX}px`,
+                    top: `${posY}px`
+                }, { duration: 150, fill: "forwards" });
+            });
+
+            // Add hover effect to interactive elements
+            const interactives = document.querySelectorAll('button, a, .project-card, .hex-card');
+            interactives.forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+            });
+
+            // --- 3. Navigation Logic ---
+            const navTriggers = document.querySelectorAll('.nav-trigger');
+            const navButtons = document.querySelectorAll('.nav-btn');
+
+            function switchSection(targetId) {
+                const currentActive = document.querySelector('.section-content.active');
+                if (currentActive && currentActive.id === `sec-${targetId}`) return; // Already on this section
+
+                if (currentActive) {
+                    currentActive.style.opacity = '0';
+                    currentActive.style.transform = 'scale(0.95) translateY(20px)';
+                    
+                    setTimeout(() => {
+                        currentActive.classList.remove('active');
+                        currentActive.style = ''; 
+                        
+                        const targetSection = document.getElementById(`sec-${targetId}`);
+                        if (targetSection) {
+                            targetSection.classList.add('active');
+                            // Small delay before animating in
+                            setTimeout(() => {
+                                targetSection.style.opacity = '1';
+                                targetSection.style.transform = 'scale(1) translateY(0)';
+                            }, 50);
+                        }
+                    }, 400); // Wait for fade out
+                }
+
+                // Update active state on nav icons
+                navButtons.forEach(btn => {
+                    if (btn.dataset.target === targetId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            navTriggers.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.target;
+                    if(target) switchSection(target);
+                });
+            });
+
+            // --- 4. Typing Effect ---
+            const typeStrings = ["Building Digital Ecosystems.", "Developing Custom Tools.", "Automating the Web.", "Writing Clean Code."];
+            let typeStringIndex = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            const typingElement = document.getElementById('typing-text');
+            
+            function typeEffect() {
+                const currentString = typeStrings[typeStringIndex];
+                
+                if (isDeleting) {
+                    typingElement.textContent = currentString.substring(0, charIndex - 1);
+                    charIndex--;
+                } else {
+                    typingElement.textContent = currentString.substring(0, charIndex + 1);
+                    charIndex++;
+                }
+
+                let typeSpeed = isDeleting ? 50 : 100;
+
+                if (!isDeleting && charIndex === currentString.length) {
+                    typeSpeed = 2000; // Pause at end
+                    isDeleting = true;
+                } else if (isDeleting && charIndex === 0) {
+                    isDeleting = false;
+                    typeStringIndex = (typeStringIndex + 1) % typeStrings.length;
+                    typeSpeed = 500; // Pause before typing next
+                }
+
+                setTimeout(typeEffect, typeSpeed);
+            }
+            
+            setTimeout(typeEffect, 2000); // Start after preloader
+
+            // --- 5. Interactive Canvas Background (Network Particles) ---
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let particles = [];
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            const mouse = { x: null, y: null, radius: 150 };
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+            });
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.size = Math.random() * 2 + 1;
+                    this.baseX = this.x;
+                    this.baseY = this.y;
+                    this.density = (Math.random() * 30) + 1;
+                    this.vx = (Math.random() - 0.5) * 1;
+                    this.vy = (Math.random() - 0.5) * 1;
+                }
+
+                draw() {
+                    ctx.fillStyle = 'rgba(245, 158, 11, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                update() {
+                    // Move around
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Bounce off edges
+                    if(this.x < 0 || this.x > width) this.vx = -this.vx;
+                    if(this.y < 0 || this.y > height) this.vy = -this.vy;
+
+                    // Mouse interaction
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < mouse.radius) {
+                        // Move away from mouse slightly
+                        const forceDirectionX = dx / distance;
+                        const forceDirectionY = dy / distance;
+                        const force = (mouse.radius - distance) / mouse.radius;
+                        const directionX = forceDirectionX * force * this.density;
+                        const directionY = forceDirectionY * force * this.density;
+                        
+                        this.x -= directionX;
+                        this.y -= directionY;
+                    }
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                let numberOfParticles = (width * height) / 15000; // Adjust density based on screen size
+                if (numberOfParticles > 100) numberOfParticles = 100; // Cap it
+                for (let i = 0; i < numberOfParticles; i++) {
+                    particles.push(new Particle());
+                }
+            }
+            initParticles();
+
+            function connectParticles() {
+                for (let a = 0; a < particles.length; a++) {
+                    for (let b = a; b < particles.length; b++) {
+                        let dx = particles[a].x - particles[b].x;
+                        let dy = particles[a].y - particles[b].y;
+                        let distance = dx * dx + dy * dy;
+
+                        if (distance < (width/10) * (height/10)) {
+                            let opacity = 1 - (distance / ((width/10) * (height/10)));
+                            // Draw lines only if opacity is high enough, colored like amber/honey
+                            ctx.strokeStyle = `rgba(245, 158, 11, ${opacity * 0.2})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[a].x, particles[a].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animateCanvas() {
+                ctx.clearRect(0, 0, width, height);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                }
+                connectParticles();
+                requestAnimationFrame(animateCanvas);
+            }
+            animateCanvas();
+        });
+    </script>
+</body>
+</html>
